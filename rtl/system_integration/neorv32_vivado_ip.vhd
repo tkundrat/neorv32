@@ -249,8 +249,9 @@ entity neorv32_vivado_ip is
     smc_ioen_o     : out std_logic;
     smc_sck_o      : out std_logic;
     smc_csn_o      : out std_logic_vector(1 downto 0);
-    smc_sdo_o      : out std_logic;
-    smc_sdi_i      : in  std_logic;
+    smc_oen_o      : out std_logic_vector(3 downto 0);
+    smc_sdo_o      : out std_logic_vector(3 downto 0);
+    smc_sdi_i      : in  std_logic_vector(3 downto 0);
     -- ------------------------------------------------------------
     -- Processor IO
     -- ------------------------------------------------------------
@@ -330,8 +331,9 @@ architecture neorv32_vivado_ip_rtl of neorv32_vivado_ip is
   signal cfs_out_aux : std_ulogic_vector(255 downto 0);
   signal neoled_aux : std_ulogic;
   signal mtime_time_aux : std_ulogic_vector(63 downto 0);
-  signal smc_ioen_aux, smc_sck_aux, smc_sdo_aux : std_ulogic;
+  signal smc_ioen_aux, smc_sck_aux : std_ulogic;
   signal smc_csn_aux : std_ulogic_vector(1 downto 0);
+  signal smc_sdo_aux, smc_oen_aux : std_ulogic_vector(3 downto 0);
   signal dmi_rsp_data_aux : std_ulogic_vector(31 downto 0);
   signal dmi_rsp_ack_aux : std_ulogic;
 
@@ -509,8 +511,9 @@ begin
     smc_ioen_o     => smc_ioen_aux,
     smc_sck_o      => smc_sck_aux,
     smc_csn_o      => smc_csn_aux,
+    smc_oen_o      => smc_oen_aux,
     smc_sdo_o      => smc_sdo_aux,
-    smc_sdi_i      => std_ulogic(smc_sdi_i),
+    smc_sdi_i      => std_ulogic_vector(smc_sdi_i),
     -- External bus interface (available if XBUS_EN = true) --
     xbus_adr_o     => xbus_req.addr,
     xbus_dat_o     => xbus_req.data,
@@ -610,7 +613,8 @@ begin
   smc_ioen_o     <= std_logic(smc_ioen_aux);
   smc_sck_o      <= std_logic(smc_sck_aux);
   smc_csn_o      <= std_logic_vector(smc_csn_aux);
-  smc_sdo_o      <= std_logic(smc_sdo_aux);
+  smc_oen_o      <= std_logic_vector(smc_oen_aux);
+  smc_sdo_o      <= std_logic_vector(smc_sdo_aux);
   dmi_rsp_data_o <= std_logic_vector(dmi_rsp_data_aux);
   dmi_rsp_ack_o  <= std_logic(dmi_rsp_ack_aux);
 
