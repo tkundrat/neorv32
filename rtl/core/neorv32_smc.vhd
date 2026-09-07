@@ -60,7 +60,7 @@ architecture neorv32_smc_rtl of neorv32_smc is
   -- CSR0 register layout --
   constant csr0_enable_c    : natural :=  0; -- r/w: SMC enable
   constant csr0_ioen_c      : natural :=  1; -- r/w: smc_ioen_o IO pin-enable
-  constant csr0_quad_c      : natural :=  2; -- r/w: 0=SPI, 1=QPI [TODO]
+  constant csr0_quad_c      : natural :=  2; -- r/w: 0=SPI, 1=QPI
   constant csr0_dual_c      : natural :=  3; -- r/w: dual-memory mode enable
   constant csr0_busy_c      : natural :=  4; -- r/-: SMC busy
   --
