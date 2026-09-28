@@ -605,10 +605,10 @@ begin
           mac_nxt.csn  <= (others => '1'); -- disable memories
           mac_nxt.oen  <= (others => '1'); -- all inputs
           mac_nxt.isel <= std_ulogic_vector(unsigned(mac.isel) + 1);
+          phy_start_o  <= '1'; -- trigger transmission of dummy ticks
           if (mac.isel = "11") then -- all commands sent?
-            mac_nxt.state <= S_IDLE;
+            mac_nxt.state <= S_END;
           else -- next initialization command
-            phy_start_o   <= '1'; -- trigger transmission of dummy ticks
             mac_nxt.state <= S_INIT_0;
           end if;
         end if;
@@ -675,18 +675,24 @@ begin
       when S_WAIT => -- wait for access to complete
       -- ------------------------------------------------------------
         mac_nxt.csn <= bcsn; -- memory enabled
+        phy_ntick_o <= "000001"; -- 1 dummy tick
         if (phy_busy_i = '0') then
           if (cmd_rw_i = '0') then
             mac_nxt.rdata <= phy_data_i; -- sample RX data
           end if;
+          mac_nxt.csn   <= (others => '1'); -- memory disabled
+          mac_nxt.oen   <= (others => '1'); -- all inputs
+          phy_start_o   <= '1'; -- some memories only end the access on a clock edge with CS high
           mac_nxt.state <= S_END;
         end if;
 
       when S_END => -- end of transfer
       -- ------------------------------------------------------------
-        mac_nxt.csn   <= (others => '1'); -- memory disabled
-        mac_nxt.oen   <= (others => '1'); -- all inputs
-        mac_nxt.state <= S_IDLE;
+        mac_nxt.csn <= (others => '1'); -- memory disabled
+        mac_nxt.oen <= (others => '1'); -- all inputs
+        if (phy_busy_i = '0') then
+          mac_nxt.state <= S_IDLE;
+        end if;
 
     end case;
   end process;
