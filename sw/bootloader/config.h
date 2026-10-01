@@ -74,6 +74,23 @@
   0x996600u      /* init sequence: 1. NOP(0x00) 2. RST-EN(0x66) 3. RST(0x99) */
 #endif
 
+// Switch the memory to QPI mode after setup (0,1)
+#ifndef SMC_QPI_EN
+#define SMC_QPI_EN 0
+#endif
+
+// QPI switch init sequences, see neorv32_smc_set_mode(); the memory might still
+// be in QPI mode after a warm reset, so it is taken out of QPI mode first
+#ifndef SMC_QPI_EXIT_ICMD
+#define SMC_QPI_EXIT_ICMD 0xf5f5f5u  /* sent in QPI mode: 3x exit QPI (0xF5)                 */
+#endif
+#ifndef SMC_QPI_ENTER_ICMD
+#define SMC_QPI_ENTER_ICMD 0x35f5f5u /* sent in SPI mode: 2x 0xF5 (no-op), enter QPI (0x35)  */
+#endif
+#ifndef SMC_QPI_ICMD
+#define SMC_QPI_ICMD 0xebebebu       /* sent in QPI mode: 3x read (0xEB), aborted after cmd  */
+#endif
+
 /**********************************************************************
  * Auto-boot
  **********************************************************************/

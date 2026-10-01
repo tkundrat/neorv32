@@ -109,6 +109,11 @@ void system_setup(void) {
 #if (SMC_EN == 1)
   if (neorv32_smc_available()) {
     neorv32_smc_setup(SMC_SETUP_ARGS);
+#if (SMC_QPI_EN == 1)
+    neorv32_smc_set_mode(1, SMC_QPI_EXIT_ICMD);
+    neorv32_smc_set_mode(0, SMC_QPI_ENTER_ICMD);
+    neorv32_smc_set_mode(1, SMC_QPI_ICMD);
+#endif
   }
 #endif
 
