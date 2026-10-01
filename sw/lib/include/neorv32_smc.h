@@ -34,7 +34,7 @@ typedef volatile struct __attribute__((packed,aligned(4))) {
 enum NEORV32_SMC_CFG0_enum {
   SMC_CSR0_EN        =  0, /**< SMC CSR0  (0) (r/w): SMC global enable */
   SMC_CSR0_IOEN      =  1, /**< SMC CSR0  (1) (r/w): Enable control of SMC IO pins */
-
+  SMC_CSR0_QUAD      =  2, /**< SMC CSR0  (2) (r/w): Enable QPI (4-bit) mode */
   SMC_CSR0_DUAL      =  3, /**< SMC CSR0  (3) (r/w): Enable dual-chip mode */
   SMC_CSR0_BUSY      =  4, /**< SMC CSR0  (4) (r/-): Memory operation in progress when set */
 
@@ -82,6 +82,7 @@ enum NEORV32_SMC_MSIZE_enum {
 /**@{*/
 int      neorv32_smc_available(void);
 void     neorv32_smc_setup(int dual, int msize, int cdiv, int rwait, uint8_t rcmd, uint8_t wcmd, uint32_t icmd);
+void     neorv32_smc_set_mode(int quad, uint32_t icmd);
 int      neorv32_smc_busy(void);
 void     neorv32_smc_pins_enable(void);
 void     neorv32_smc_pins_disable(void);

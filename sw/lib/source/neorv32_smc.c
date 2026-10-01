@@ -57,6 +57,30 @@ void neorv32_smc_setup(int dual, int msize, int cdiv, int rwait, uint8_t rcmd, u
 }
 
 /**********************************************************************//**
+ * Switch between SPI and QPI mode and re-run the initialization sequence,
+ * which is sent in the new mode. All other settings are kept.
+ *
+ * @warning Do not call this from code located in the SMC memory.
+ *
+ * @param[in] quad Enable QPI (4-bit) mode (0,1).
+ * @param[in] icmd Initialization commands (3x8-bit, LSB-aligned).
+ **************************************************************************/
+void neorv32_smc_set_mode(int quad, uint32_t icmd) {
+
+  uint32_t tmp = NEORV32_SMC->CSR0;
+  tmp &= ~((uint32_t)(1 << SMC_CSR0_QUAD) | (uint32_t)(1 << SMC_CSR0_BUSY));
+  tmp |= (uint32_t)((quad & 0x01U) << SMC_CSR0_QUAD);
+
+  // disable, so the initialization sequence runs again on enable
+  NEORV32_SMC->CSR0 = 0;
+  NEORV32_SMC->CSR1 = icmd << SMC_CSR1_ICMD0_LSB;
+  NEORV32_SMC->CSR0 = tmp;
+
+  // wait for initialization sequence to complete
+  while (neorv32_smc_busy());
+}
+
+/**********************************************************************//**
  * Check if a SMC memory operation is in progress.
  *
  * @return Zero if SMC is idle, non-zero if memory operation in progress.
