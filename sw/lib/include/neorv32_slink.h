@@ -24,7 +24,7 @@
 /** SLINK module prototype */
 typedef volatile struct __attribute__((packed,aligned(4))) {
   uint32_t CTRL;       /**< control register (#NEORV32_SLINK_CTRL_enum) */
-  const uint32_t _res; /**< reserved */
+  uint32_t ROUTE;      /**< routing information */
   uint32_t DATA;       /**< RX/TX data register */
   uint32_t DATA2;      /**< RX/TX data register mirror (+ TX end-of-stream) */
 } neorv32_slink_t;
@@ -101,6 +101,24 @@ static inline uint32_t __attribute__((always_inline)) neorv32_slink_rx_get(void)
  **************************************************************************/
 static inline int __attribute__((always_inline)) neorv32_slink_rx_last(void) {
   return (int)((NEORV32_SLINK->CTRL >> SLINK_CTRL_RX_LAST) & 1U);
+}
+
+/**********************************************************************//**
+ * Get RX link routing source.
+ * @note This function must be called BEFORE reading the actual data word.
+ * @return 4-bit source routing ID.
+ **************************************************************************/
+static inline uint32_t __attribute__((always_inline)) neorv32_slink_get_src(void) {
+  return NEORV32_SLINK->ROUTE & 0xfU;
+}
+
+/**********************************************************************//**
+ * Set TX link routing destination.
+ * @note This function must be called BEFORE sending the actual data word.
+ * @param[in] dst Routing destination ID (4-bit, LSB-aligned).
+ **************************************************************************/
+static inline void __attribute__((always_inline)) neorv32_slink_set_dst(uint32_t dst) {
+  NEORV32_SLINK->ROUTE = dst;
 }
 
 /**********************************************************************//**

@@ -1069,10 +1069,12 @@ package neorv32_package is
     xbus_err_i     : in  std_ulogic := 'L';
     -- Stream link interface (available if IO_SLINK_EN = true) --
     slink_rx_dat_i : in  std_ulogic_vector(31 downto 0) := (others => 'L');
+    slink_rx_src_i : in  std_ulogic_vector(3 downto 0)  := (others => 'L');
     slink_rx_val_i : in  std_ulogic := 'L';
     slink_rx_lst_i : in  std_ulogic := 'L';
     slink_rx_rdy_o : out std_ulogic;
     slink_tx_dat_o : out std_ulogic_vector(31 downto 0);
+    slink_tx_dst_o : out std_ulogic_vector(3 downto 0);
     slink_tx_val_o : out std_ulogic;
     slink_tx_lst_o : out std_ulogic;
     slink_tx_rdy_i : in  std_ulogic := 'L';

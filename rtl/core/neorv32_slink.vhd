@@ -29,11 +29,13 @@ entity neorv32_slink is
     irq_o            : out std_ulogic;                     -- interrupt
     -- RX stream interface --
     slink_rx_data_i  : in  std_ulogic_vector(31 downto 0); -- input data
+    slink_rx_src_i   : in  std_ulogic_vector(3 downto 0);  -- routing information
     slink_rx_valid_i : in  std_ulogic;                     -- valid input
     slink_rx_last_i  : in  std_ulogic;                     -- end of stream
     slink_rx_ready_o : out std_ulogic;                     -- ready to receive
     -- TX stream interface --
     slink_tx_data_o  : out std_ulogic_vector(31 downto 0); -- output data
+    slink_tx_dst_o   : out std_ulogic_vector(3 downto 0);  -- routing destination
     slink_tx_valid_o : out std_ulogic;                     -- valid output
     slink_tx_last_o  : out std_ulogic;                     -- end of stream
     slink_tx_ready_i : in  std_ulogic                      -- ready to send
@@ -83,11 +85,12 @@ architecture neorv32_slink_rtl of neorv32_slink is
     tx_irq_sel : std_ulogic_vector(1 downto 0);
   end record;
   signal ctrl : ctrl_t;
+  signal tx_route : std_ulogic_vector(3 downto 0);
 
   -- FIFO interfaces --
   type fifo_t is record
     clear, we, re     : std_ulogic;
-    wdata, rdata      : std_ulogic_vector(32 downto 0);
+    wdata, rdata      : std_ulogic_vector(36 downto 0);
     avail, free, half : std_ulogic;
   end record;
   signal tx_fifo, rx_fifo : fifo_t;
@@ -117,6 +120,7 @@ begin
       ctrl.tx_enable  <= '0';
       ctrl.rx_irq_sel <= (others => '0');
       ctrl.tx_irq_sel <= (others => '0');
+      tx_route        <= (others => '0');
     elsif rising_edge(clk_i) then
       if (bus_req_i.stb = '1') and (bus_req_i.rw = '1') then
         if (bus_req_i.addr(3 downto 2) = "00") then -- control register
@@ -124,6 +128,9 @@ begin
           ctrl.tx_enable  <= bus_req_i.data(ctrl_tx_en_c);
           ctrl.rx_irq_sel <= bus_req_i.data(ctrl_rx_irq_sel1_c downto ctrl_rx_irq_sel0_c);
           ctrl.tx_irq_sel <= bus_req_i.data(ctrl_tx_irq_sel1_c downto ctrl_tx_irq_sel0_c);
+        end if;
+        if (bus_req_i.addr(3 downto 2) = "01") then -- routing register
+          tx_route <= bus_req_i.data(3 downto 0);
         end if;
       end if;
     end if;
@@ -138,7 +145,7 @@ begin
         bus_rdata(ctrl_rx_en_c) <= ctrl.rx_enable;
         bus_rdata(ctrl_tx_en_c) <= ctrl.tx_enable;
         --
-        bus_rdata(ctrl_rx_last_c) <= rx_fifo.rdata(32);
+        bus_rdata(ctrl_rx_last_c) <= rx_fifo.rdata(36);
         --
         bus_rdata(ctrl_rx_empty_c) <= not rx_fifo.avail;
         bus_rdata(ctrl_rx_half_c)  <= rx_fifo.half;
@@ -154,6 +161,8 @@ begin
         --
         bus_rdata(ctrl_rx_fifo3_c downto ctrl_rx_fifo0_c) <= std_ulogic_vector(to_unsigned(rx_awidth_c, 4));
         bus_rdata(ctrl_tx_fifo3_c downto ctrl_tx_fifo0_c) <= std_ulogic_vector(to_unsigned(tx_awidth_c, 4));
+      elsif (bus_req_i.addr(3 downto 2) = "01") then -- RX TOP word's source routing information
+        bus_rdata(3 downto 0) <= rx_fifo.rdata(35 downto 32);
       else -- RX data
         bus_rdata <= rx_fifo.rdata(31 downto 0);
       end if;
@@ -179,7 +188,7 @@ begin
   rx_fifo_inst: entity neorv32.neorv32_prim_fifo
   generic map (
     AWIDTH  => rx_awidth_c,
-    DWIDTH  => 1+32, -- last + data
+    DWIDTH  => 1+4+32, -- last + source + data
     OUTGATE => true, -- to prevent getting X in simulation
     ASYNCRD => false
   )
@@ -202,7 +211,7 @@ begin
   rx_fifo.clear    <= not ctrl.rx_enable;
   rx_fifo.re       <= bus_rden and bus_req_i.addr(3);
   rx_fifo.we       <= slink_rx_valid_i;
-  rx_fifo.wdata    <= slink_rx_last_i & slink_rx_data_i;
+  rx_fifo.wdata    <= slink_rx_last_i & slink_rx_src_i & slink_rx_data_i;
   slink_rx_ready_o <= rx_fifo.free and ctrl.rx_enable;
 
   rx_fifo_small:
@@ -232,7 +241,7 @@ begin
   tx_fifo_inst: entity neorv32.neorv32_prim_fifo
   generic map (
     AWIDTH  => tx_awidth_c,
-    DWIDTH  => 1+32, -- last + data
+    DWIDTH  => 1+4+32, -- last + destination + data
     OUTGATE => false,
     ASYNCRD => false
   )
@@ -254,10 +263,11 @@ begin
 
   tx_fifo.clear    <= not ctrl.tx_enable;
   tx_fifo.we       <= bus_req_i.stb and bus_req_i.rw and bus_req_i.addr(3);
-  tx_fifo.wdata    <= bus_req_i.addr(2) & bus_req_i.data; -- last-flag is set via access address
+  tx_fifo.wdata    <= bus_req_i.addr(2) & tx_route & bus_req_i.data; -- last-flag is set via access address
   tx_fifo.re       <= slink_tx_ready_i;
   slink_tx_data_o  <= tx_fifo.rdata(31 downto 0);
-  slink_tx_last_o  <= tx_fifo.rdata(32);
+  slink_tx_dst_o   <= tx_fifo.rdata(35 downto 32);
+  slink_tx_last_o  <= tx_fifo.rdata(36);
   slink_tx_valid_o <= tx_fifo.avail;
 
   tx_fifo_small:
